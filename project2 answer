@@ -1,0 +1,195 @@
+# Priority Queue Assignment
+
+### q1
+The complete binary tree ADT we designed based on singly linked list is as follows:
+```python
+class CompleTree:
+    def __init__(self):
+        self.root = None
+        self.count = -1
+
+    def append(self, key):
+        """
+        Add a node from the end of the singlylinked list.
+        """
+        if self.is_empty():
+            self.root = Node(key)
+            self.count +=1
+        else:
+            cur = self.root
+            while cur.next is not None:
+                cur = cur.next
+            cur.next = Node(key)
+            self.count +=1
+    
+    def deleteNode(self, idx):
+        """
+        Delete an element from a singly linked list by index
+        """
+        if not (idx >=0 and idx <= self.count):
+            print("Error")
+            return 
+        if idx == 0:
+            res = self.root.key
+            self.root = None
+            return res
+        else:
+            cur = self.root
+            cnt = 0
+            while cnt +1 != idx:
+                cur = cur.next
+                cnt +=1
+            res = cur.next.key
+            cur.next = cur.next.next
+            self.count -= 1
+            return res
+                
+    def getNode(self, idx):
+        """
+        Get a node from the singly linked list according to the index
+        """
+        if idx > self.count:
+            return None
+        cur = self.root
+        for i in range(idx):
+            cur = cur.next
+        return cur
+    
+    def getParent(self, idx):
+        par = (idx - 1) // 2
+        return self.getNode(par)
+
+    def getLChild(self, idx):
+        lchild = idx*2 + 1
+        return self.getNode(lchild)
+    
+    def getRChild(self, idx):
+        rchild = idx*2 + 2
+        return self.getNode(rchild)
+```
+
+### q2
+We let the priority queue class inherit the complete binary tree class and add 4 core implementation code : *downAdjust()*, *deleteMin()*, *upAdjust()*, *insert()*.
+
+*downAdjust()*: This method always compares the current node **V** with its left and right child nodes (if they exist). Assuming that there is a child whose key is smaller than that of node **V**, exchange the child node with the smaller key with node **V**; After the exchange is complete, continue to compare node V with its children until the key of the children of node **V** is greater than the key of node **V** or node **V** does not exist.
+
+*deleteMin()*: This method first swap the last node with the top node of the min priotity queue, then delete the last node, and then execute *downAdjust()* method.
+
+*upAdjust()*: This method always compares the current node with the parent node, and if the key is smaller than the parent node, the current node's key value is exchanged with the parent node's key value. Repeatedly compare until reaching the heap top or the key of the parent node is smaller.
+
+*insert()*: This method first adds a new node to the end of the singly linked list, and then executes the *Adjust()* method.
+
+The specific code is implemented as follows:
+```python
+class PriorityQueue(CompleTree):
+    def upAdjust(self, low, high):
+        i = high
+        j = (i - 1)//2
+        while j >= low:
+            cur = self.getNode(i)
+            par = self.getParent(i)
+            if cur.key < par.key:
+                temp = cur.key
+                cur.key = par.key
+                par.key = temp
+                i = j
+                j = (i - 1)//2
+            else:
+                break
+
+    def insert(self, key):
+        self.append(key)
+        self.upAdjust(0, self.count)
+    
+    def downAdjust(self, low, high):
+        i = low
+        j = i*2 + 1
+        while j <= high:
+            cur = self.getNode(i)
+            child = self.getNode(j)
+            if j + 1 <= high:
+                bro = self.getNode(j + 1)
+                if bro.key < child.key:
+                    j = j + 1
+                    child = bro
+            if child.key < cur.key:
+                temp = child.key
+                child.key = cur.key
+                cur.key = temp
+                i = j
+                j = i*2 + 1
+            else:
+                break
+
+    def deleteMin(self):
+        last = self.getNode(self.count)
+        temp = self.root.key
+        self.root.key = last.key
+        last.key = temp
+        res = self.deleteNode(self.count)
+        self.downAdjust(0, self.count)
+        return res
+```
+
+### q3
+*downAdjust()*: This method repeatedly compare until reaching the number of nodes is exceeded or the key of the child node is smaller than that of current node. There are at most log(n) comparison process in total. The time complexity of the *getNode* method used in the comparison process is O(n). The time complexity of exchanging two node key values is O(1). Therefore, the overall time complexity of the *downAdjust* is O(nlogn).
+
+*deleteMin()*: This method first swap the last node with the top node of the min priotity queue, then delete the last node, and then execute *downAdjust()* method. The time complexity of exchanging two node key values is O(1). The time complexity of deleting a node in a singly linked list is O(n). The time complexity of the *downAdjust* method is O(nlogn). Therefore, the overall time complexity of the *deleteMin* is O(1 + n + nlogn) = O(nlogn).
+
+*upAdjust()*: This method repeatedly compare until reaching the heap top or the key of the parent node is smaller. There are at most log(n) comparison process in total. The time complexity of the *getNode* method and *getParent* method used in the comparison process is O(n). The time complexity of exchanging two node key values is O(1). Therefore, the overall time complexity of the *upAdjust* is O(nlogn).
+
+*insert()*: This method first adds a new node to the end of the singly linked list, and then executes the *Adjust()* method. The time complexity of the *append* method is O(n). The time complexity of the *upAdjust* method is O(nlogn). Therefore, the overall time complexity of the *insert* is O(n + nlogn) = O(nlogn).
+
+### q4
+We generate 50 random numbers using random module , and then add these nodes to the min priority queue in turn. Next, we repeatedly execute the *deleteMin* method and get sorted result.
+
+The test code is as follows:
+```python 
+pq = PriorityQueue()
+len = 50
+for i in range(len):
+    a = random.randint(0,1000)
+    pq.insert(a)
+for i in range(len):
+    print(pq.deleteMin(), end = " ")
+```
+We use the module to visualize the results cProfile and snakeviz to visualize the performance benchmark result. 
+The script command is as follows:
+```
+pip install snakeviz
+python -m cProfile -o results.prof PQTest.py
+snakeviz results.prof
+```
+![benchmark](./result/result.png)
+
+### q5
+We generate 30 random numbers using random module , and then add these nodes to the min priority queue in turn. Next, we draw its corresponding tree structure using graphviz.
+The drawing code is as follows:
+```python
+def visualize_tree(tree: PriorityQueue):
+    dot = Digraph()
+    dot.node(name=str(tree.root), label=str(tree.root.key))
+    idx = 0
+    for i in range(0, tree.count + 1):
+        cur = tree.getNode(i)
+        lchild = tree.getLChild(i)
+        rchild = tree.getRChild(i)
+        if lchild is not None:
+            dot.node(name=str(lchild) ,label=str(lchild.key))
+            dot.edge(str(cur), str(lchild))
+        if rchild is not None:
+            dot.node(name=str(rchild) ,label=str(rchild.key))
+            dot.edge(str(cur), str(rchild))
+    return dot
+
+
+pq = PriorityQueue()
+len = 30
+for i in range(len):
+   a = random.randint(0,1000)
+   pq.insert(a)
+dot = visualize_tree(pq)
+dot.view(filename="mypicture", directory="./")
+```
+The tree structure result is as follows:
+![benchmark](./result/mypicture.png)
